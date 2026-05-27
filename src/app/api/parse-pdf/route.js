@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRequire } from 'module';
-
-const nodeRequire = createRequire(import.meta.url);
-// Hide the sub-path from Turbopack's static analyzer using a variable definition
-const pdfLibPath = 'pdf-parse/lib/pdf-parse.js';
-const pdf = nodeRequire(pdfLibPath);
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export const runtime = 'nodejs';
 
@@ -28,16 +23,25 @@ export async function POST(request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = new Uint8Array(arrayBuffer);
 
     let parsedText = '';
     try {
-      const parsePdf = typeof pdf === 'function' ? pdf : (pdf && pdf.default);
-      if (typeof parsePdf !== 'function') {
-        throw new Error(`PDF parsing library was not loaded correctly. (Type: ${typeof pdf}, default type: ${pdf ? typeof pdf.default : 'undefined'}).`);
+      const loadingTask = pdfjsLib.getDocument({ data: buffer });
+      const pdfDoc = await loadingTask.promise;
+      
+      let textChunks = [];
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        // Extract string from each text item, filtering out empty items
+        const pageText = textContent.items
+          .map(item => item.str)
+          .filter(str => typeof str === 'string')
+          .join(' ');
+        textChunks.push(pageText);
       }
-      const data = await parsePdf(buffer);
-      parsedText = data.text;
+      parsedText = textChunks.join('\n');
     } catch (parseError) {
       console.error('PDF parsing error inside /api/parse-pdf:', parseError);
       return NextResponse.json({ 
