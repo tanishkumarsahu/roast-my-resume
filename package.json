@@ -1,22 +1,18 @@
 {
-  "name": "roastmyresume",
+  "name": "roastmyresume-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "next": "16.2.6",
-    "pdfjs-dist": "5.4.296",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace frontend",
+    "start": "concurrently \"npm run start --workspace backend\" \"npm run start --workspace frontend\"",
+    "lint": "npm run lint --workspace frontend"
   },
   "devDependencies": {
-    "eslint": "^9",
-    "eslint-config-next": "16.2.6"
+    "concurrently": "^9.2.1"
   }
 }

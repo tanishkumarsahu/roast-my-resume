@@ -27,8 +27,8 @@
   --ats-blue: 217 91% 60%;
   
   /* Font Families */
-  --font-sans: var(--font-outfit), system-ui, -apple-system, sans-serif;
-  --font-monospace: var(--font-mono), 'Courier New', Courier, monospace;
+  --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-monospace: "JetBrains Mono", "SFMono-Regular", Consolas, 'Courier New', Courier, monospace;
   
   --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

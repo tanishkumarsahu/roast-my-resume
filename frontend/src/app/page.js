@@ -53,6 +53,14 @@ async function readApiResponse(response, fallbackMessage) {
   };
 }
 
+// Resolves local path to absolute API URL in production, bypassing Vercel serverless 10s timeout limit.
+const getApiUrl = (path) => {
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  return `${cleanBase}${path}`;
+};
+
+
 export default function Home() {
   // --- States ---
   const [file, setFile] = useState(null);
@@ -169,8 +177,8 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      // Decoupled Route: POST /api/parse-pdf
-      const response = await fetch('/api/parse-pdf', {
+      // Decoupled Route: POST /api/parse-pdf (Dynamic URL resolved for Vercel timeout bypass)
+      const response = await fetch(getApiUrl('/api/parse-pdf'), {
         method: 'POST',
         body: formData
       });
@@ -212,8 +220,8 @@ export default function Home() {
     setError(null);
 
     try {
-      // POST /api/roast (JSON Contract)
-      const response = await fetch('/api/roast', {
+      // POST /api/roast (JSON Contract, Dynamic URL resolved for Vercel timeout bypass)
+      const response = await fetch(getApiUrl('/api/roast'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
