@@ -63,9 +63,9 @@ npm install
 ```
 
 ### 3. Environment Variables
-Create `.env.local` files inside both workspace folders:
+Create the environment files inside both workspace folders:
 
-#### Backend: `backend/.env.local`
+#### Backend: `backend/.env`
 ```env
 PORT=4000
 GEMINI_API_KEY=your_gemini_api_key_here
