@@ -1,41 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createRequire } from 'module';
+
+const nodeRequire = createRequire(import.meta.url);
+// Hide the sub-path from Turbopack's static analyzer using a variable definition
+const pdfLibPath = 'pdf-parse/lib/pdf-parse.js';
+const pdf = nodeRequire(pdfLibPath);
 
 export const runtime = 'nodejs';
-
-async function extractTextFromPdf(buffer) {
-  const loadingTask = getDocument({
-    data: new Uint8Array(buffer),
-    disableFontFace: true,
-    isEvalSupported: false,
-    isOffscreenCanvasSupported: false,
-    useSystemFonts: false,
-    useWorkerFetch: false,
-    useWasm: false,
-  });
-
-  const pdfDocument = await loadingTask.promise;
-
-  try {
-    const pages = [];
-
-    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-      const page = await pdfDocument.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .filter((item) => typeof item.str === 'string')
-        .map((item) => item.str)
-        .join(' ');
-
-      pages.push(pageText);
-      page.cleanup();
-    }
-
-    return pages.join('\n\n');
-  } finally {
-    await pdfDocument.destroy();
-  }
-}
 
 export async function POST(request) {
   try {
@@ -61,7 +32,12 @@ export async function POST(request) {
 
     let parsedText = '';
     try {
-      parsedText = await extractTextFromPdf(buffer);
+      const parsePdf = typeof pdf === 'function' ? pdf : (pdf && pdf.default);
+      if (typeof parsePdf !== 'function') {
+        throw new Error(`PDF parsing library was not loaded correctly. (Type: ${typeof pdf}, default type: ${pdf ? typeof pdf.default : 'undefined'}).`);
+      }
+      const data = await parsePdf(buffer);
+      parsedText = data.text;
     } catch (parseError) {
       console.error('PDF parsing error inside /api/parse-pdf:', parseError);
       return NextResponse.json({ 
