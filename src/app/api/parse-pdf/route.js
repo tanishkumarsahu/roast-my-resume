@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createRequire } from 'module';
 
 const nodeRequire = createRequire(import.meta.url);
-const { PDFParse } = nodeRequire('pdf-parse');
+const pdf = nodeRequire('pdf-parse/lib/pdf-parse.js');
 
 export const runtime = 'nodejs';
 
@@ -29,27 +29,18 @@ export async function POST(request) {
     const buffer = Buffer.from(arrayBuffer);
 
     let parsedText = '';
-    let parser;
     try {
-      if (typeof PDFParse !== 'function') {
-        throw new Error(`PDF parsing library was not loaded correctly. (PDFParse type: ${typeof PDFParse}).`);
+      const parsePdf = typeof pdf === 'function' ? pdf : (pdf && pdf.default);
+      if (typeof parsePdf !== 'function') {
+        throw new Error(`PDF parsing library was not loaded correctly. (Type: ${typeof pdf}, default type: ${pdf ? typeof pdf.default : 'undefined'}).`);
       }
-      parser = new PDFParse({ data: buffer });
-      const data = await parser.getText();
+      const data = await parsePdf(buffer);
       parsedText = data.text;
     } catch (parseError) {
       console.error('PDF parsing error inside /api/parse-pdf:', parseError);
       return NextResponse.json({ 
         error: `Failed to extract text from the PDF. Error detail: ${parseError.message || parseError}` 
       }, { status: 500 });
-    } finally {
-      if (parser) {
-        try {
-          await parser.destroy();
-        } catch (destroyError) {
-          console.warn('PDF parser cleanup failed:', destroyError);
-        }
-      }
     }
 
     if (!parsedText || parsedText.trim().length < 50) {
