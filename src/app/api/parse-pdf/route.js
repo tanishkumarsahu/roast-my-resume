@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRequire } from 'module';
-
-const nodeRequire = createRequire(import.meta.url);
-const pdf = nodeRequire('pdf-parse/lib/pdf-parse.js');
+import { PDFParse } from 'pdf-parse';
 
 export const runtime = 'nodejs';
 
@@ -29,18 +26,18 @@ export async function POST(request) {
     const buffer = Buffer.from(arrayBuffer);
 
     let parsedText = '';
+    let parser;
     try {
-      const parsePdf = typeof pdf === 'function' ? pdf : (pdf && pdf.default);
-      if (typeof parsePdf !== 'function') {
-        throw new Error(`PDF parsing library was not loaded correctly. (Type: ${typeof pdf}, default type: ${pdf ? typeof pdf.default : 'undefined'}).`);
-      }
-      const data = await parsePdf(buffer);
+      parser = new PDFParse({ data: buffer });
+      const data = await parser.getText();
       parsedText = data.text;
     } catch (parseError) {
       console.error('PDF parsing error inside /api/parse-pdf:', parseError);
       return NextResponse.json({ 
         error: `Failed to extract text from the PDF. Error detail: ${parseError.message || parseError}` 
       }, { status: 500 });
+    } finally {
+      await parser?.destroy();
     }
 
     if (!parsedText || parsedText.trim().length < 50) {
