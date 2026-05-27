@@ -1,7 +1,41 @@
 import { NextResponse } from 'next/server';
-import { PDFParse } from 'pdf-parse';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export const runtime = 'nodejs';
+
+async function extractTextFromPdf(buffer) {
+  const loadingTask = getDocument({
+    data: new Uint8Array(buffer),
+    disableFontFace: true,
+    isEvalSupported: false,
+    isOffscreenCanvasSupported: false,
+    useSystemFonts: false,
+    useWorkerFetch: false,
+    useWasm: false,
+  });
+
+  const pdfDocument = await loadingTask.promise;
+
+  try {
+    const pages = [];
+
+    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+      const page = await pdfDocument.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .filter((item) => typeof item.str === 'string')
+        .map((item) => item.str)
+        .join(' ');
+
+      pages.push(pageText);
+      page.cleanup();
+    }
+
+    return pages.join('\n\n');
+  } finally {
+    await pdfDocument.destroy();
+  }
+}
 
 export async function POST(request) {
   try {
@@ -26,18 +60,13 @@ export async function POST(request) {
     const buffer = Buffer.from(arrayBuffer);
 
     let parsedText = '';
-    let parser;
     try {
-      parser = new PDFParse({ data: buffer });
-      const data = await parser.getText();
-      parsedText = data.text;
+      parsedText = await extractTextFromPdf(buffer);
     } catch (parseError) {
       console.error('PDF parsing error inside /api/parse-pdf:', parseError);
       return NextResponse.json({ 
         error: `Failed to extract text from the PDF. Error detail: ${parseError.message || parseError}` 
       }, { status: 500 });
-    } finally {
-      await parser?.destroy();
     }
 
     if (!parsedText || parsedText.trim().length < 50) {

@@ -34,6 +34,25 @@ const PERSONAS = [
   }
 ];
 
+async function readApiResponse(response, fallbackMessage) {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+
+  const body = await response.text();
+  const isHtml = body.trimStart().startsWith('<!DOCTYPE') || body.trimStart().startsWith('<html');
+
+  return {
+    error: response.ok
+      ? fallbackMessage
+      : isHtml
+        ? `${fallbackMessage} The server returned an HTML error page instead of JSON. Check the production function logs.`
+        : body || fallbackMessage
+  };
+}
+
 export default function Home() {
   // --- States ---
   const [file, setFile] = useState(null);
@@ -156,7 +175,7 @@ export default function Home() {
         body: formData
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response, 'Failed to extract text from your PDF.');
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to extract text from your PDF.');
@@ -204,7 +223,7 @@ export default function Home() {
         })
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response, 'Server error occurred during roasting.');
 
       if (!response.ok) {
         throw new Error(data.error || 'Server error occurred during roasting.');
