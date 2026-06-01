@@ -18,12 +18,12 @@ function getGenAI() {
 const responseSchema = {
   type: "OBJECT",
   properties: {
-    ats_score: { 
+    ats_score: {
       type: "INTEGER",
       description: "Estimated ATS match score from 0 to 100 based on the JD alignment."
     },
-    ats_reason: { 
-      type: "STRING", 
+    ats_reason: {
+      type: "STRING",
       description: "A one-line punchy reason justifying the ATS score."
     },
     sections: {
@@ -76,8 +76,8 @@ const responseSchema = {
         required: ["original", "rewritten"]
       }
     },
-    verdict: { 
-      type: "STRING", 
+    verdict: {
+      type: "STRING",
       description: "A single, incredibly sharp, hilarious, and punchy closing verdict line in the persona's voice."
     }
   },
@@ -151,7 +151,7 @@ export async function generateRoast(resumeText, jobDescription, persona) {
   try {
     const systemInstruction = PERSONA_INSTRUCTIONS[persona] || PERSONA_INSTRUCTIONS.faang_recruiter;
     const genAIInstance = getGenAI();
-    
+
     // Get the Gemini model configured with JSON response type and schema
     const model = genAIInstance.getGenerativeModel({
       model: "gemini-2.5-flash",
@@ -181,7 +181,7 @@ ${jobDescription}
 
     const result = await model.generateContent(userPrompt);
     const responseText = result.response.text();
-    
+
     // Parse the JSON. Because we used responseSchema, it is guaranteed to be valid JSON matching the schema!
     const parsedData = JSON.parse(responseText);
     return parsedData;
